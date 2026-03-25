@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Portal Mgr">
+<title>Portal Manager · دفتر</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0f0f0f;
+  --card:    #1a1a1a;
+  --card2:   #222;
+  --border:  #2a2a2a;
+  --ink:     #f0ede8;
+  --mid:     #888;
+  --dim:     #555;
+  --gold:    #f5c842;
+  --green:   #3ddc84;
+  --red:     #ff5c5c;
+  --amber:   #ffaa2e;
+  --blue:    #5b9cf6;
+  --pill-h:  44px;
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  font-size: 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+body { min-height: 100dvh; overscroll-behavior: none; }
+
+/* ── CHROME ── */
+.chrome {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: var(--safe-top) 0 0;
+  background: rgba(15,15,15,.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+}
+.chrome-inner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px 12px;
+}
+.chrome-title { flex: 1; }
+.chrome-title h1 { font-size: 1rem; font-weight: 700; letter-spacing: -.01em; }
+.chrome-title p  { font-size: .72rem; color: var(--mid); margin-top: 1px; font-family: 'IBM Plex Mono', monospace; }
+.chrome-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: .62rem; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  background: rgba(245,200,66,.12); color: var(--gold);
+  border: 1px solid rgba(245,200,66,.25); border-radius: 6px;
+  padding: 4px 9px; white-space: nowrap;
+}
+.chrome-spacer { height: calc(var(--safe-top) + 64px); }
+
+/* ── SETUP SCREEN ── */
+.setup {
+  max-width: 480px; margin: 0 auto; padding: 24px 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.setup-logo {
+  text-align: center; padding: 32px 0 16px;
+}
+.setup-logo .icon { font-size: 3rem; margin-bottom: 12px; display: block; }
+.setup-logo h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+.setup-logo p  { font-size: .85rem; color: var(--mid); line-height: 1.6; }
+
+.field label {
+  display: block; font-size: .7rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--mid); margin-bottom: 8px;
+}
+.field input, .field textarea {
+  width: 100%; background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 12px; padding: 13px 16px; color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace; font-size: .82rem;
+  outline: none; transition: border .15s;
+  -webkit-appearance: none;
+}
+.field input:focus, .field textarea:focus { border-color: var(--gold); }
+.field .hint { font-size: .72rem; color: var(--dim); margin-top: 6px; line-height: 1.5; }
+
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; height: var(--pill-h); border-radius: 12px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: .9rem; font-weight: 700;
+  cursor: pointer; transition: opacity .15s, transform .1s;
+  -webkit-appearance: none;
+}
+.btn:active { opacity: .7; transform: scale(.98); }
+.btn-gold   { background: var(--gold); color: #0f0f0f; }
+.btn-ghost  { background: var(--card); color: var(--mid); border: 1.5px solid var(--border); }
+.btn-red    { background: rgba(255,92,92,.15); color: var(--red); border: 1.5px solid rgba(255,92,92,.3); }
+.btn-green  { background: rgba(61,220,132,.15); color: var(--green); border: 1.5px solid rgba(61,220,132,.3); }
+.btn-amber  { background: rgba(255,170,46,.15); color: var(--amber); border: 1.5px solid rgba(255,170,46,.3); }
+.btn-sm { height: 38px; font-size: .82rem; border-radius: 9px; }
+.btn:disabled { opacity: .35; pointer-events: none; }
+
+/* ── MAIN APP ── */
+.app { max-width: 560px; margin: 0 auto; padding: 12px 14px 40px; }
+
+/* ── CLASS PICKER ── */
+.class-row {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  margin-bottom: 14px; scrollbar-width: none;
+}
+.class-row::-webkit-scrollbar { display: none; }
+.class-chip {
+  flex-shrink: 0; height: 36px; padding: 0 14px;
+  border-radius: 99px; border: 1.5px solid var(--border);
+  background: var(--card); color: var(--mid);
+  font-size: .8rem; font-weight: 600; cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+  -webkit-appearance: none;
+}
+.class-chip.active { background: var(--gold); color: #0f0f0f; border-color: var(--gold); }
+
+/* ── FILTER TABS ── */
+.tabs {
+  display: flex; gap: 6px; margin-bottom: 14px;
+  background: var(--card); border-radius: 12px; padding: 4px;
+}
+.tab {
+  flex: 1; height: 34px; border-radius: 9px; border: none;
+  background: none; color: var(--mid); font-size: .78rem; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s;
+}
+.tab.active { background: var(--card2); color: var(--ink); }
+
+/* ── ITEM LIST ── */
+.items { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; cursor: pointer;
+  transition: border-color .15s; position: relative;
+  overflow: hidden;
+}
+.item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+}
+.item.type-lesson::before  { background: var(--blue); }
+.item.type-homework::before { background: var(--gold); }
+.item.st-hidden::before    { background: var(--amber); }
+.item.st-archived::before  { background: var(--red); }
+.item.selected { border-color: var(--gold); }
+.item.st-hidden, .item.st-archived { opacity: .6; }
+
+.item-top { display: flex; align-items: center; gap: 10px; }
+.item-icon { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; }
+.item-title { flex: 1; font-size: .9rem; font-weight: 600; line-height: 1.3; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-active   { background: var(--green); }
+.dot-hidden   { background: var(--amber); }
+.dot-archived { background: var(--red); }
+.dot-deleted  { background: var(--dim); }
+.item-meta { font-size: .72rem; color: var(--dim); margin-top: 5px; padding-left: 32px;
+  font-family: 'IBM Plex Mono', monospace; }
+
+/* ── STATE MESSAGES ── */
+.state {
+  text-align: center; padding: 48px 20px; color: var(--dim);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.state .ico { font-size: 2.4rem; opacity: .4; }
+.state p { font-size: .85rem; line-height: 1.6; max-width: 240px; }
+.spin {
+  width: 24px; height: 24px; border: 2px solid var(--border);
+  border-top-color: var(--gold); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── ACTION SHEET (slides up) ── */
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.sheet-overlay.open { opacity: 1; pointer-events: all; }
+
+.sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+  background: var(--card); border-radius: 24px 24px 0 0;
+  padding: 0 0 var(--safe-bottom);
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32,.72,0,1);
+  max-width: 560px; margin: 0 auto;
+}
+.sheet.open { transform: translateY(0); }
+
+.sheet-handle {
+  width: 36px; height: 4px; background: var(--border);
+  border-radius: 99px; margin: 12px auto 0;
+}
+.sheet-head {
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.sheet-head h3 { font-size: .95rem; font-weight: 700; margin-bottom: 3px; }
+.sheet-head p  { font-size: .75rem; color: var(--mid); font-family: 'IBM Plex Mono', monospace; }
+
+.stats-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  padding: 12px 20px; border-bottom: 1px solid var(--border); gap: 0;
+}
+.stat { text-align: center; }
+.stat-val { font-size: 1.2rem; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+.stat-lbl { font-size: .63rem; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+.val-green  { color: var(--green); }
+.val-amber  { color: var(--amber); }
+.val-red    { color: var(--red); }
+.val-blue   { color: var(--blue); }
+.val-dim    { color: var(--dim); }
+
+.warn-box {
+  margin: 10px 20px 0; padding: 10px 14px; border-radius: 10px;
+  font-size: .8rem; line-height: 1.55; display: none;
+}
+.warn-box.show { display: block; }
+.wb-amber { background: rgba(255,170,46,.1); border: 1px solid rgba(255,170,46,.3); color: var(--amber); }
+.wb-red   { background: rgba(255,92,92,.1);  border: 1px solid rgba(255,92,92,.3);  color: var(--red); }
+.wb-green { background: rgba(61,220,132,.1); border: 1px solid rgba(61,220,132,.3); color: var(--green); }
+.wb-blue  { background: rgba(91,156,246,.1); border: 1px solid rgba(91,156,246,.3); color: var(--blue); }
+
+.sheet-actions { padding: 12px 20px 8px; display: flex; flex-direction: column; gap: 9px; }
+
+/* ── CONFIRM SHEET ── */
+.confirm-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+  background: var(--card2); border-radius: 24px 24px 0 0;
+  padding: 0 20px var(--safe-bottom);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.32,.72,0,1);
+  max-width: 560px; margin: 0 auto;
+}
+.confirm-sheet.open { transform: translateY(0); }
+.confirm-sheet .sheet-handle { margin-bottom: 16px; }
+.confirm-ico  { font-size: 2rem; margin-bottom: 10px; text-align: center; }
+.confirm-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; text-align: center; }
+.confirm-msg   { font-size: .84rem; color: var(--mid); line-height: 1.65; text-align: center; margin-bottom: 20px; }
+.confirm-btns  { display: flex; flex-direction: column; gap: 9px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: calc(var(--safe-bottom) + 16px); left: 16px; right: 16px;
+  max-width: 528px; margin: 0 auto; z-index: 500;
+  padding: 14px 18px; border-radius: 14px;
+  font-size: .88rem; font-weight: 600;
+  transform: translateY(80px); opacity: 0;
+  transition: all .25s cubic-bezier(.32,.72,0,1);
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast-ok  { background: var(--green); color: #0a2e18; }
+.toast-err { background: var(--red);   color: #fff; }
+
+/* ── SAVED INDICATOR ── */
+.saved-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'IBM Plex Mono', monospace; font-size: .65rem;
+  color: var(--green); opacity: 0; transition: opacity .3s;
+}
+.saved-pill.show { opacity: 1; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 0; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ SETUP SCREEN ═══════════════ -->
+<div id="screen-setup">
+  <div class="setup">
+    <div class="setup-logo">
+      <span class="icon">🎓</span>
+      <h2>Portal Manager</h2>
+      <p>Manage what students see in their portal — from your iPhone.</p>
+    </div>
+
+    <div class="field">
+      <label>Apps Script URL</label>
+      <input id="inp-url" type="url" inputmode="url" autocomplete="off" autocorrect="off"
+        spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec"
+        oninput="document.getElementById('test-result').style.color='';document.getElementById('test-result').textContent='';">
+      <div class="hint">Paste your Web App URL from the Apps Script project.</div>
+    </div>
+
+    <div class="field">
+      <label>Teacher Secret</label>
+      <input id="inp-secret" type="password" inputmode="text" autocomplete="off"
+        placeholder="your-teacher-secret"
+        oninput="document.getElementById('test-result').style.color='';document.getElementById('test-result').textContent='';">
+      <div class="hint">The <code>teacherSecret</code> value from your Config sheet.</div>
+    </div>
+
+    <button class="btn btn-gold" onclick="saveConfig()">Save & Open →</button>
+    <button class="btn btn-ghost btn-sm" id="btn-test" onclick="testConn()" style="margin-top:-4px;">
+      Test connection first
+    </button>
+
+    <div id="test-result" style="font-size:.78rem;text-align:center;color:var(--dim);min-height:18px;"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN APP ═══════════════ -->
+<div id="screen-app" style="display:none;">
+
+  <div class="chrome">
+    <div class="chrome-inner">
+      <div class="chrome-title">
+        <h1>Portal Manager</h1>
+        <p id="lbl-url" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></p>
+      </div>
+      <span class="chrome-badge">دفتر</span>
+      <button class="btn btn-ghost btn-sm" style="width:auto;padding:0 12px;flex-shrink:0;"
+        onclick="showSetup()">⚙</button>
+    </div>
+  </div>
+  <div class="chrome-spacer"></div>
+
+  <div class="app">
+
+    <!-- Class chips -->
+    <div class="class-row" id="class-row"></div>
+
+    <!-- Filter tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="setFilter('all',this)">All</button>
+      <button class="tab" onclick="setFilter('lesson',this)">📖 Lessons</button>
+      <button class="tab" onclick="setFilter('homework',this)">📝 HW</button>
+      <button class="tab" onclick="setFilter('hidden',this)">👁 Hidden</button>
+    </div>
+
+    <!-- Items -->
+    <div class="items" id="item-list">
+      <div class="state"><div class="ico">🎓</div><p>Select a class above to load items</p></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ ACTION SHEET ═══════════════ -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="action-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3 id="sh-title">—</h3>
+    <p  id="sh-sub">—</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-val" id="sh-status-val">—</div>
+      <div class="stat-lbl">Status</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="sh-subs-val">—</div>
+      <div class="stat-lbl">Submissions</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="sh-linked-val">—</div>
+      <div class="stat-lbl">Linked HW</div>
+    </div>
+  </div>
+
+  <div class="warn-box wb-amber" id="wn-subs"></div>
+  <div class="warn-box wb-red"   id="wn-linked"></div>
+  <div class="warn-box wb-green" id="wn-safe"></div>
+  <div class="warn-box wb-blue"  id="wn-hidden"></div>
+
+  <div class="sheet-actions" id="sh-actions"></div>
+</div>
+
+<!-- ═══════════════ CONFIRM SHEET ═══════════════ -->
+<div class="sheet-overlay" id="confirm-overlay" style="z-index:299;" onclick="closeConfirm()"></div>
+<div class="confirm-sheet" id="confirm-sheet">
+  <div class="sheet-handle"></div>
+  <div class="confirm-ico"   id="ci-ico">⚠️</div>
+  <div class="confirm-title" id="ci-title">Confirm</div>
+  <div class="confirm-msg"   id="ci-msg"></div>
+  <div class="confirm-btns">
+    <button class="btn" id="ci-btn" onclick="runConfirm()">Confirm</button>
+    <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════════════ TOAST ═══════════════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONFIG — stored in localStorage
+═══════════════════════════════════════════════ */
+var STORE_KEY = 'pm_cfg_v1';
+
+function loadCfg() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveCfg(o) { localStorage.setItem(STORE_KEY, JSON.stringify(o)); }
+
+/* ═══════════════════════════════════════════════
+   CLASS MAP — baked in (matches Code.gs CG.NAMES)
+   Edit here if you add/remove classes.
+═══════════════════════════════════════════════ */
+var CLASS_MAP = {
+  'vYckXeY_GS': 'TCS-1',
+  'U889smjzQU': 'TCS-2',
+  'EhHw9lPmTZ': 'TCSF-1',
+  'DVfRHIJMai': 'TCSF-2',
+  'WQg786n7Gq': 'TCS-3',
+  'GXPGjggyDv': '2BACSP-1',
+  'zjNsrntmh7': '2BACSP-2'
+};
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+var CFG           = loadCfg();
+var allItems      = [];
+var activeClass   = '';
+var activeFilter  = 'all';
+var selectedItem  = null;
+var selectedStatus= null;
+var pendingAction = null;
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', function() {
+  if (CFG.scriptUrl && CFG.teacherSecret) {
+    enterApp();
+  }
+});
+
+function showSetup() {
+  document.getElementById('screen-setup').style.display = '';
+  document.getElementById('screen-app').style.display  = 'none';
+  document.getElementById('inp-url').value    = CFG.scriptUrl    || '';
+  document.getElementById('inp-secret').value = CFG.teacherSecret|| '';
+}
+
+function saveConfig() {
+  var url    = document.getElementById('inp-url').value.trim();
+  var secret = document.getElementById('inp-secret').value.trim();
+  if (!url || !secret) { toast('Fill in both fields', true); return; }
+  CFG.scriptUrl    = url;
+  CFG.teacherSecret= secret;
+  saveCfg(CFG);
+  enterApp();
+}
+
+function enterApp() {
+  document.getElementById('screen-setup').style.display = 'none';
+  document.getElementById('screen-app').style.display  = '';
+
+  // Show short URL
+  try {
+    var u = new URL(CFG.scriptUrl);
+    document.getElementById('lbl-url').textContent = u.hostname;
+  } catch(e) {
+    document.getElementById('lbl-url').textContent = '…';
+  }
+
+  buildClassChips();
+}
+
+/* ═══════════════════════════════════════════════
+   CLASS CHIPS
+═══════════════════════════════════════════════ */
+function buildClassChips() {
+  var row = document.getElementById('class-row');
+  row.innerHTML = '';
+  Object.keys(CLASS_MAP).forEach(function(id) {
+    var btn = document.createElement('button');
+    btn.className = 'class-chip';
+    btn.textContent = CLASS_MAP[id];
+    btn.onclick = function() { selectClass(id, btn); };
+    row.appendChild(btn);
+  });
+}
+
+function selectClass(id, btn) {
+  activeClass = id;
+  document.querySelectorAll('.class-chip').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  closeSheet();
+  loadItems(id);
+}
+
+/* ═══════════════════════════════════════════════
+   API — direct fetch to Apps Script
+═══════════════════════════════════════════════ */
+function api(body) {
+  return fetch(CFG.scriptUrl, {
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify(Object.assign({}, body, { teacherSecret: CFG.teacherSecret })),
+    redirect:'follow'
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    /* Give a helpful hint for auth failures */
+    if (d && d.error === 'Unauthorized') {
+      d.error = 'Wrong secret — tap ⚙ and re-enter the teacherSecret from your Config sheet';
+    }
+    return d;
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   LOAD ITEMS
+═══════════════════════════════════════════════ */
+function loadItems(classId) {
+  var list = document.getElementById('item-list');
+  list.innerHTML = '<div class="state"><div class="spin"></div><p>Loading…</p></div>';
+  allItems = [];
+
+  api({ action:'getAllItems', classId:classId })
+    .then(function(d) {
+      if (!d.ok) {
+        list.innerHTML = '<div class="state"><div class="ico">⚠️</div><p>' + esc(d.error||'Error') + '</p></div>';
+        return;
+      }
+      allItems = d.items || [];
+      renderList();
+    })
+    .catch(function(e) {
+      list.innerHTML = '<div class="state"><div class="ico">📡</div><p>Connection failed<br><small>' + esc(e.message||'') + '</small></p></div>';
+    });
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER LIST
+═══════════════════════════════════════════════ */
+function renderList() {
+  var list = document.getElementById('item-list');
+
+  var filtered = allItems.filter(function(item) {
+    var st = item.status || 'active';
+    if (activeFilter === 'lesson')   return item.type === 'lesson';
+    if (activeFilter === 'homework') return item.type !== 'lesson';
+    if (activeFilter === 'hidden')   return st === 'hidden' || st === 'archived';
+    return true;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="state"><div class="ico">🔍</div><p>No items found</p></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(function(item) {
+    var st    = item.status || 'active';
+    var icon  = item.type === 'lesson' ? '📖' : '📝';
+    var dotCls= 'dot-' + (st || 'active');
+    var typeCls='type-' + item.type;
+    var stCls = st !== 'active' ? 'st-' + st : '';
+    var subs  = item.subCount || 0;
+    var meta  = (item.type === 'lesson' ? 'L' + (item.lessonNumber||'') : 'HW')
+              + ' · ' + subs + ' submission' + (subs !== 1 ? 's' : '')
+              + ' · ' + cap(st);
+    return '<div class="item ' + typeCls + ' ' + stCls + '" '
+      + 'id="item-' + esc(item.id) + '" '
+      + 'onclick="selectItem(\'' + esc(item.id) + '\')">'
+      + '<div class="item-top">'
+      + '<span class="item-icon">' + icon + '</span>'
+      + '<span class="item-title">' + esc(item.title) + '</span>'
+      + '<span class="status-dot ' + dotCls + '"></span>'
+      + '</div>'
+      + '<div class="item-meta">' + meta + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   SELECT ITEM — load status + show action sheet
+═══════════════════════════════════════════════ */
+function selectItem(id) {
+  var item = allItems.find(function(i){ return i.id === id; });
+  if (!item) return;
+  selectedItem = item;
+
+  // Highlight
+  document.querySelectorAll('.item.selected').forEach(function(el){ el.classList.remove('selected'); });
+  var el = document.getElementById('item-' + id);
+  if (el) el.classList.add('selected');
+
+  // Open sheet with spinner
+  document.getElementById('sh-title').textContent = item.title;
+  document.getElementById('sh-sub').textContent   = (item.type === 'lesson' ? '📖 Lesson' : '📝 Homework') + ' · ' + item.id;
+  document.getElementById('sh-status-val').textContent = '…';
+  document.getElementById('sh-subs-val').textContent   = '…';
+  document.getElementById('sh-linked-val').textContent = '…';
+  document.getElementById('sh-actions').innerHTML = '<div class="spin" style="margin:8px auto;"></div>';
+  hideAllWarns();
+  openSheet();
+
+  // Fetch real status
+  api({ action:'getItemStatus', itemId:id, classId:activeClass })
+    .then(function(d) {
+      if (!d.ok) { toast('⚠ ' + d.error, true); return; }
+      renderSheet(d);
+    })
+    .catch(function() { toast('Connection failed', true); });
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER ACTION SHEET
+═══════════════════════════════════════════════ */
+function renderSheet(d) {
+  selectedStatus = d;
+  var st    = d.status || 'active';
+  var subs  = d.subCount || 0;
+  var linked= (d.linkedHW || []).length;
+
+  // Stats
+  var sv = document.getElementById('sh-status-val');
+  sv.textContent = cap(st);
+  sv.className   = 'stat-val val-' + ({active:'green',hidden:'amber',archived:'red',deleted:'dim'}[st]||'dim');
+  var subv = document.getElementById('sh-subs-val');
+  subv.textContent = subs;
+  subv.className   = 'stat-val ' + (subs > 0 ? 'val-amber' : 'val-green');
+  var lkv = document.getElementById('sh-linked-val');
+  lkv.textContent = linked;
+  lkv.className   = 'stat-val ' + (linked > 0 ? 'val-amber' : 'val-green');
+
+  // Warnings
+  hideAllWarns();
+  if (subs > 0) showWarn('wn-subs', '⚠ ' + subs + ' submission' + (subs>1?'s':'') + ' exist — delete is blocked. Archive instead.');
+  if (linked > 0) showWarn('wn-linked', '🔗 Linked to ' + linked + ' homework item' + (linked>1?'s':'') + '. Hide linked HW first before deleting this lesson.');
+  if (d.safeToDelete) showWarn('wn-safe', '✓ No submissions and no linked homework — safe to delete.');
+  if (st === 'hidden')   showWarn('wn-hidden', '👁 Hidden — students cannot see this. Data is intact.');
+  if (st === 'archived') showWarn('wn-hidden', '📦 Archived — permanently hidden but all data is preserved.');
+
+  // Buttons
+  var actions = document.getElementById('sh-actions');
+  if (st === 'active') {
+    actions.innerHTML =
+      '<button class="btn btn-amber" onclick="doAction(\'hide\')">' +
+        '<span>👁</span> Hide from portal</button>' +
+      '<div style="display:flex;gap:8px;">' +
+        '<button class="btn btn-ghost btn-sm" style="flex:1" onclick="doAction(\'archive\')">📦 Archive</button>' +
+        (d.safeToDelete
+          ? '<button class="btn btn-red btn-sm" style="flex:1" onclick="doAction(\'delete\')">🗑 Delete</button>'
+          : '<button class="btn btn-red btn-sm" style="flex:1;opacity:.35;pointer-events:none;">🗑 Delete</button>') +
+      '</div>';
+  } else if (st === 'hidden') {
+    actions.innerHTML =
+      '<button class="btn btn-green" onclick="doAction(\'unhide\')">✓ Restore — make visible</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="doAction(\'archive\')">📦 Archive instead</button>';
+  } else if (st === 'archived') {
+    actions.innerHTML =
+      '<button class="btn btn-green" onclick="doAction(\'unhide\')">↩ Restore to active</button>';
+  } else {
+    actions.innerHTML = '<p style="text-align:center;font-size:.8rem;color:var(--dim);padding:8px 0">Item is deleted. Edit directly in the sheet to restore.</p>';
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ACTIONS
+═══════════════════════════════════════════════ */
+function doAction(action) {
+  pendingAction = action;
+  var item = selectedItem;
+
+  var cfg = {
+    hide:    { ico:'👁', title:'Hide this item?',
+               msg:'"' + item.title + '" will disappear from the student portal immediately. All data and submissions are safe. You can restore it any time.',
+               btnLabel:'Yes, hide it', btnCls:'btn-amber' },
+    unhide:  { ico:'✓',  title:'Restore to visible?',
+               msg:'"' + item.title + '" will reappear in the student portal on their next load.',
+               btnLabel:'Yes, restore', btnCls:'btn-green' },
+    archive: { ico:'📦', title:'Archive this item?',
+               msg:'"' + item.title + '" will be permanently hidden. All submissions and scores are preserved. You can still restore it from the sheet.',
+               btnLabel:'Yes, archive', btnCls:'btn-amber' },
+    delete:  { ico:'🗑', title:'Delete this item?',
+               msg:'"' + item.title + '" will be soft-deleted and never appear in the portal again. All data stays in the sheet.',
+               btnLabel:'Yes, delete',  btnCls:'btn-red' }
+  }[action];
+
+  if (!cfg) return;
+
+  document.getElementById('ci-ico').textContent   = cfg.ico;
+  document.getElementById('ci-title').textContent = cfg.title;
+  document.getElementById('ci-msg').textContent   = cfg.msg;
+  var btn = document.getElementById('ci-btn');
+  btn.textContent = cfg.btnLabel;
+  btn.className   = 'btn ' + cfg.btnCls;
+  openConfirm();
+}
+
+function runConfirm() {
+  /* ── Save state BEFORE closeConfirm() ──
+     closeConfirm() sets pendingAction = null.
+     If we call it first and then check pendingAction, we always get null → silent exit.
+     Fix: snapshot both variables, then close the UI, then use the snapshots. */
+  var action = pendingAction;
+  var item   = selectedItem;
+
+  closeConfirm();   /* safe to call now — we already have local copies */
+
+  if (!action || !item) {
+    toast('⚠ Nothing to confirm — please tap the item again', true);
+    return;
+  }
+
+  var backendAction = {
+    hide:    'hideItem',
+    unhide:  'unhideItem',
+    archive: 'archiveItem',
+    delete:  'deleteItem'
+  }[action];
+
+  if (!backendAction) {
+    toast('⚠ Unknown action: ' + action, true);
+    return;
+  }
+
+  /* Show spinner while waiting */
+  document.getElementById('sh-actions').innerHTML = '<div class="spin" style="margin:8px auto;"></div>';
+
+  api({ action:backendAction, itemId:item.id, classId:activeClass })
+    .then(function(d) {
+      if (!d.ok) {
+        /* Always restore action buttons on failure so teacher can retry */
+        var errMsg = d.error || d.detail || 'Action failed';
+
+        if (d.blocked && d.reason === 'SUBMISSIONS_EXIST') {
+          toast('⚠ ' + item.title + ' has ' + d.subCount + ' submission(s) — archive instead of deleting', true);
+          document.getElementById('sh-actions').innerHTML =
+            '<button class="btn btn-amber" onclick="doAction(\'archive\')">📦 Archive instead</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="closeSheet()">Cancel</button>';
+
+        } else if (d.blocked && d.reason === 'LINKED_HOMEWORK_EXISTS') {
+          toast('⚠ Hide linked homework first: ' + (d.linkedHW||[]).join(', '), true);
+          document.getElementById('sh-actions').innerHTML =
+            '<button class="btn btn-amber" onclick="doAction(\'hide\')">👁 Hide anyway (retry)</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="closeSheet()">Cancel</button>';
+
+        } else {
+          toast('⚠ ' + errMsg, true);
+          /* Re-fetch status so buttons reflect reality */
+          selectItem(item.id);
+        }
+        return;
+      }
+
+      /* ── Success ── */
+      var newStatus = {
+        hideItem:    'hidden',
+        unhideItem:  'active',
+        archiveItem: 'archived',
+        deleteItem:  'deleted'
+      }[backendAction] || 'active';
+
+      /* Update local cache */
+      allItems.forEach(function(i){ if (i.id === item.id) i.status = newStatus; });
+
+      var msg = {
+        hideItem:    '✓ Hidden — students can no longer see this',
+        unhideItem:  '✓ Restored — item is visible again',
+        archiveItem: '✓ Archived — permanently hidden, data safe',
+        deleteItem:  '✓ Deleted — data preserved in sheet'
+      }[backendAction] || '✓ Done';
+      toast(msg, false);
+
+      closeSheet();
+      renderList();
+    })
+    .catch(function(err) {
+      var msg = err && err.message ? err.message : 'Network error';
+      toast('📡 Connection failed — ' + msg, true);
+      /* Restore buttons so teacher can retry */
+      selectItem(item.id);
+    });
+}
+
+/* ═══════════════════════════════════════════════
+   TEST CONNECTION
+═══════════════════════════════════════════════ */
+function testConn() {
+  var url    = document.getElementById('inp-url').value.trim();
+  var secret = document.getElementById('inp-secret').value.trim();
+  var res    = document.getElementById('test-result');
+  if (!url) { res.textContent = 'Enter the URL first'; return; }
+  res.textContent = '⌛ Testing connection…';
+  document.getElementById('btn-test').disabled = true;
+
+  // Step 1: test basic connectivity
+  fetch(url, {
+    method:'POST', headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'test'}), redirect:'follow'
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (!d.ok) { res.textContent = '❌ Script error: ' + (d.error||'Unknown'); return; }
+    res.textContent = '✅ Connected (v' + (d.version||'?') + ')';
+    if (!secret) { res.textContent += ' — enter secret to test auth'; return; }
+
+    // Step 2: test auth
+    res.textContent += '  ⌛ Checking secret…';
+    return fetch(url, {
+      method:'POST', headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'checkAuth', teacherSecret:secret}), redirect:'follow'
+    })
+    .then(function(r2){ return r2.json(); })
+    .then(function(d2) {
+      if (d2.ok) {
+        res.textContent = '✅ Connected + ✅ Secret matches — tap Save & Open';
+        res.style.color = 'var(--green)';
+      } else {
+        res.textContent = '✅ Connected  ❌ Wrong secret — check your Config sheet row "teacherSecret"';
+        res.style.color = 'var(--red)';
+      }
+    });
+  })
+  .catch(function(e) {
+    res.textContent = '❌ ' + (e.message||'Network error');
+    res.style.color = 'var(--red)';
+  })
+  .finally(function() {
+    document.getElementById('btn-test').disabled = false;
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   FILTER TABS
+═══════════════════════════════════════════════ */
+function setFilter(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  closeSheet();
+  renderList();
+}
+
+/* ═══════════════════════════════════════════════
+   SHEET HELPERS
+═══════════════════════════════════════════════ */
+function openSheet() {
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById('action-sheet').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.getElementById('action-sheet').classList.remove('open');
+  document.body.style.overflow = '';
+  selectedItem = null;
+  document.querySelectorAll('.item.selected').forEach(function(el){ el.classList.remove('selected'); });
+}
+function openConfirm() {
+  document.getElementById('confirm-overlay').classList.add('open');
+  document.getElementById('confirm-sheet').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  document.getElementById('confirm-sheet').classList.remove('open');
+  pendingAction = null;
+}
+function hideAllWarns() {
+  ['wn-subs','wn-linked','wn-safe','wn-hidden'].forEach(function(id){
+    document.getElementById(id).classList.remove('show');
+  });
+}
+function showWarn(id, txt) {
+  var el = document.getElementById(id);
+  el.textContent = txt;
+  el.classList.add('show');
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+function toast(msg, isErr) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'toast show ' + (isErr ? 'toast-err' : 'toast-ok');
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove('show'); }, 3200);
+}
+
+/* ═══════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════ */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+</script>
+</body>
+</html>
